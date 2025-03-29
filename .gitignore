@@ -4,6 +4,5 @@ sqlmap
 __pycache__
 requirements.txt
 test.py
-utils
 sqlmap_adaptive_partial_report_*
 sqlmap.cast
