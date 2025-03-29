@@ -281,6 +281,46 @@ Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --
 }
 ```
 
+## Contributing
+
+This project welcomes contributions from the community! Here are some ways you can help:
+
+### Areas for Improvement
+
+- **Additional DBMS Support**: Enhance support for less common database types
+- **Advanced WAF Bypass Techniques**: Implement more sophisticated WAF detection and bypass methods
+- **Reporting Enhancements**: Improve the report generation with more detailed analysis
+- **UI/UX Improvements**: Create a web interface or better command-line experience
+- **Custom Tamper Scripts**: Develop specialized tamper scripts for specific WAF types
+- **Documentation**: Improve documentation and add more examples
+- **Testing**: Add test cases and improve test coverage
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Commit your changes (`git commit -m 'Add some amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+### Development Setup
+
+To set up the development environment:
+
+```bash
+# Clone your fork
+git clone https://github.com/yourusername/sqlmap-ai.git
+cd sqlmap-ai
+
+# Set up virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies including development requirements
+pip install -r requirements.txt
+pip install -r requirements-dev.txt  # if available
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
