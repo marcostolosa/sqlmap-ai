@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def get_groq_response(
     prompt: str,
-    model: str = "qwen-2.5-coder-32b",
+    model: str = "qwen-qwq-32b",
     role: str = "user",
     max_retries: int = 3,
     retry_delay: int = 2,
@@ -26,7 +26,7 @@ def get_groq_response(
 
     Args:
         prompt (str): The prompt to send to the model.
-        model (str): The model to use (defaults to "qwen-2.5-coder-32b").
+        model (str): The model to use (defaults to "qwen-qwq-32b").
         role (str): The role of the message (e.g., "user", "system", "assistant").
         max_retries (int): Maximum number of retries for failed requests.
         retry_delay (int): Delay (in seconds) between retries.
