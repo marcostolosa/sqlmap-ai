@@ -6,3 +6,10 @@ requirements.txt
 test.py
 sqlmap_adaptive_partial_report_*
 sqlmap.cast
+reports
+.eeg-info
+sqlmap_ai_audit.log
+dist/sqlmap_ai-2.0.0.tar.gz
+dist/sqlmap_ai-2.0.0-py3-none-any.whl
+sqlmap_ai.egg-info/
+.sqlmap_ai_key

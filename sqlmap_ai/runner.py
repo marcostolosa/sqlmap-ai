@@ -31,7 +31,7 @@ class SQLMapAPIRunner:
                 print_info("SQLMap API server is already running.")
                 return
         except:
-            print_info("Starting SQLMap API server...")
+            print_info("Starting scan...")
             subprocess.Popen(
                 [sys.executable, self.sqlmap_api_script, "-s"], 
                 cwd=self.script_dir
@@ -46,7 +46,6 @@ class SQLMapAPIRunner:
             
             if data["success"]:
                 task_id = data["taskid"]
-                print_info(f"Created new task with ID: {task_id}")
                 self.current_task_id = task_id
                 return task_id
             else:
@@ -422,8 +421,7 @@ class SQLMapAPIRunner:
         else:
             command_str += " " + options
             
-        print_info(f"Executing SQLMap command: {command_str}")
-        print_info(f"Timeout set to {timeout} seconds. Press Ctrl+C to cancel.")
+        print_info("Scanning target...")
         
         if not self._start_scan(task_id, target_url, options):
             self._delete_task(task_id)
@@ -450,9 +448,7 @@ class SQLMapAPIRunner:
 
     def gather_info(self, target_url: str, timeout: int = 120, interactive: bool = False) -> Optional[str]:
         """Run basic fingerprinting and database enumeration."""
-        print_info("Running basic fingerprinting and database enumeration...")
-        print_info("This will identify the database type and list available databases.")
-        print_info("If scan takes too long, you can press Ctrl+C to interrupt it")
+        print_info("Starting initial reconnaissance...")
         
         try:
             result = self.run_sqlmap(
@@ -468,8 +464,7 @@ class SQLMapAPIRunner:
 
     def fallback_options_for_timeout(self, target_url: str) -> Optional[str]:
         """Run with more focused options after a timeout."""
-        print_info("Original scan timed out. Running with more focused options...")
-        print_info("This will attempt a faster scan with fewer test vectors.")
+        print_info("Running fallback scan...")
         
         fallback_options = [
             "--technique=BT",   
