@@ -414,8 +414,20 @@ class SQLMapAPIRunner:
         task_id = self._create_new_task()
         if not task_id:
             return None
+        
+        # Check if we're using a request file
+        using_request_file = False
+        if isinstance(options, list):
+            using_request_file = any(opt.startswith('-r') or opt.startswith('--request-file') for opt in options)
+        elif isinstance(options, str):
+            using_request_file = '-r' in options or '--request-file' in options
             
-        command_str = f"sqlmap -u {target_url}"
+        # Build command string
+        if using_request_file:
+            command_str = "sqlmap"
+        else:
+            command_str = f"sqlmap -u {target_url}"
+            
         if isinstance(options, list):
             command_str += " " + " ".join(options)
         else:

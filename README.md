@@ -104,6 +104,60 @@ sqlmap-ai -u "http://example.com/page.php?id=1"
 sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider groq
 ```
 
+### HTTP Request File Testing (NEW!)
+
+```bash
+# Test using HTTP request capture file
+sqlmap-ai -r request.txt
+
+# Enhanced mode with request file and adaptive testing
+sqlmap-ai --enhanced --adaptive -r request.txt
+
+# With specific AI provider
+sqlmap-ai --enhanced -r request.txt --ai-provider groq
+
+# Simple mode with request file
+sqlmap-ai --simple -r request.txt
+```
+
+**Request File Format:**
+```http
+POST /login.php HTTP/1.1
+Host: example.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 38
+
+username=admin&password=test
+```
+
+**Creating Request Files:**
+
+1. **From Browser Developer Tools:**
+   - Open Developer Tools (F12)
+   - Go to Network tab
+   - Perform the action you want to test
+   - Right-click the request → Copy → Copy as cURL
+   - Convert cURL to HTTP format
+
+2. **From Burp Suite:**
+   - Intercept the request
+   - Right-click → Save item
+   - Save as .txt file
+
+3. **From OWASP ZAP:**
+   - Right-click request → Export → HTTP Message
+   - Save as .txt file
+
+**Supported Request Types:**
+ - [x] GET requests with parameters
+ - [x] POST requests with form data
+ - [x] POST requests with JSON data
+ - [x] Requests with cookies
+ - [x] Requests with custom headers
+ - [x] Multipart form data
+
 ### Advanced Testing
 
 ```bash
@@ -112,6 +166,9 @@ sqlmap-ai --adaptive
 
 # Simple mode (basic SQLMap without AI)
 sqlmap-ai --simple -u "http://example.com/page.php?id=1"
+
+# Enhanced mode with custom options
+sqlmap-ai --enhanced -u "http://example.com/page.php?id=1" --level 3 --risk 2
 ```
 
 ### AI Provider Selection
@@ -129,6 +186,90 @@ sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider openai
 # Auto-select best available
 sqlmap-ai -u "http://example.com/page.php?id=1" --ai-provider auto
 ```
+
+### Complete Testing Workflow
+
+```bash
+# 1. Basic scan with URL
+sqlmap-ai -u "http://example.com/page.php?id=1"
+
+# 2. Enhanced scan with request file
+sqlmap-ai --enhanced --adaptive -r captured_request.txt
+
+# 3. Advanced scan with custom options
+sqlmap-ai --enhanced -r request.txt --level 4 --risk 3 --threads 10
+
+# 4. Simple mode for quick testing
+sqlmap-ai --simple -r request.txt --batch
+```
+
+## Testing Modes
+
+### Enhanced Mode (Default)
+Full AI-powered testing with advanced features:
+
+```bash
+# Basic enhanced scan
+sqlmap-ai --enhanced -u "http://example.com/page.php?id=1"
+
+# With request file
+sqlmap-ai --enhanced -r request.txt
+
+# Adaptive testing with AI analysis
+sqlmap-ai --enhanced --adaptive -r request.txt --ai-provider groq
+```
+
+**Features:**
+- AI-powered vulnerability analysis
+- Adaptive testing strategies
+- WAF evasion techniques
+- Beautiful HTML reports
+- Risk assessment and remediation guidance
+- Interactive CLI with progress tracking
+- Multiple AI providers (Groq, OpenAI, Anthropic, Ollama)
+- Advanced configuration management
+- Request file support (NEW!)
+
+### Simple Mode
+Basic SQL injection testing without AI features:
+
+```bash
+# Basic simple scan
+sqlmap-ai --simple -u "http://example.com/page.php?id=1"
+
+# With request file
+sqlmap-ai --simple -r request.txt
+
+# Quick batch mode
+sqlmap-ai --simple -r request.txt --batch
+```
+
+**Features:**
+- Basic SQL injection detection
+- Standard SQLMap functionality
+- Minimal dependencies
+- Fast execution
+- Request file support (NEW!)
+- Simple text output
+- Basic result saving
+
+### Adaptive Mode
+Intelligent step-by-step testing that adapts to the target:
+
+```bash
+# Full adaptive testing
+sqlmap-ai --enhanced --adaptive -r request.txt
+
+# With specific AI provider
+sqlmap-ai --enhanced --adaptive -r request.txt --ai-provider groq
+```
+
+**Adaptive Steps:**
+1. **🟢 Initial Assessment** - Check for SQL injection vulnerabilities
+2. **🟠 DBMS Identification** - Detect database type (MySQL, PostgreSQL, etc.)
+3. **🔴 Enhanced Testing** - Try more aggressive techniques
+4. **🟣 Data Extraction** - Extract valuable data from identified tables
+5. **🤖 AI Analysis** - Get AI recommendations for next steps
 
 ## AI Providers Comparison
 
@@ -202,6 +343,17 @@ ui:
 **4. "Configuration issues"**
 - Run `sqlmap-ai --config-wizard` to fix setup
 - Check `sqlmap-ai --validate-config` for issues
+
+**5. "Request file not working"**
+- Ensure request file has proper HTTP format
+- Check that Host header is present
+- Verify request file path is correct
+- Try with `--simple` mode first: `sqlmap-ai --simple -r request.txt`
+
+**6. "URL validation failed"**
+- When using request files, the URL is automatically extracted
+- Ensure request file contains valid HTTP request
+- Check that the Host header matches the target domain
 
 ### Getting Help
 

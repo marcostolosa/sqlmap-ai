@@ -24,6 +24,7 @@ from sqlmap_ai.adaptive_testing import run_adaptive_test_sequence
 from sqlmap_ai.advanced_reporting import report_generator
 from sqlmap_ai.evasion_engine import evasion_engine
 from utils.ai_providers import ai_manager, get_available_ai_providers
+from typing import Optional
 def main():
     """Enhanced main function with improved CLI and security"""
     # Create enhanced CLI parser
@@ -45,15 +46,14 @@ def main():
             return
     
     # Check if we have a target
-    if not args.url and not args.request_file:
+    target_url = get_target_url_from_args(args)
+    if not target_url:
         if args.interactive:
             target_url = get_target_url()
         else:
             print_error("No target specified. Use -u/--url or -r/--request-file")
             print_info("Use --help for usage information")
             return
-    else:
-        target_url = args.url
     
     try:
         # Security validation
@@ -107,6 +107,10 @@ def build_sqlmap_options(args) -> list:
     options = ["--batch"]  # Always use batch mode for automation
     
     config = get_config()
+    
+    # Add request file if provided
+    if args.request_file:
+        options.extend(["-r", args.request_file])
     
     # Add risk and level
     risk = args.risk or config.sqlmap.default_risk
@@ -424,6 +428,55 @@ def confirm_additional_step():
             return False
         else:
             print("Please answer with 'y' or 'n'.")
+
+def extract_url_from_request_file(request_file_path: str) -> Optional[str]:
+    """Extract target URL from HTTP request file"""
+    try:
+        with open(request_file_path, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+        
+        # Parse the first line to get the request line
+        lines = content.split('\n')
+        if not lines:
+            return None
+        
+        # First line should be: METHOD /path HTTP/1.1
+        request_line = lines[0].strip()
+        parts = request_line.split()
+        if len(parts) < 2:
+            return None
+        
+        # Find Host header
+        host = None
+        for line in lines[1:]:
+            if line.lower().startswith('host:'):
+                host = line.split(':', 1)[1].strip()
+                break
+        
+        if not host:
+            return None
+        
+        # Determine protocol (default to http)
+        protocol = 'https' if 'https://' in content.lower() else 'http'
+        
+        # Construct URL
+        path = parts[1]
+        if not path.startswith('/'):
+            path = '/' + path
+        
+        return f"{protocol}://{host}{path}"
+        
+    except Exception as e:
+        print_warning(f"Failed to extract URL from request file: {e}")
+        return None
+
+def get_target_url_from_args(args) -> Optional[str]:
+    """Get target URL from either URL argument or request file"""
+    if args.url:
+        return args.url
+    elif args.request_file:
+        return extract_url_from_request_file(args.request_file)
+    return None
 
 def main_simple():
     """Simple mode - basic SQL injection testing without AI features"""

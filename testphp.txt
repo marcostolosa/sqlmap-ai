@@ -1,0 +1,9 @@
+GET /product.php?pic=1 HTTP/1.1
+Host: testphp.vulnweb.com
+Accept-Language: en-US,en;q=0.9
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Referer: http://testphp.vulnweb.com/listproducts.php?cat=1
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
