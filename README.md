@@ -16,7 +16,7 @@ An AI-powered wrapper around SQLMap that makes SQL injection testing more access
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/sqlmap-ai.git
+git clone https://github.com/atiilla/sqlmap-ai.git
 cd sqlmap-ai
 
 # Install the package
