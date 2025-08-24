@@ -13,3 +13,5 @@ dist/sqlmap_ai-2.0.0.tar.gz
 dist/sqlmap_ai-2.0.0-py3-none-any.whl
 sqlmap_ai.egg-info/
 .sqlmap_ai_key
+dist/
+documentation/
