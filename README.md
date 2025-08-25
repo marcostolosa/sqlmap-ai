@@ -10,6 +10,8 @@ An AI-powered wrapper around SQLMap that makes SQL injection testing more access
 - **NEW: Adaptive step-by-step testing with DBMS-specific optimizations and WAF bypass**
 - **NEW: Ollama support for local AI analysis**
 
+<img src="sqlmap.gif"/>
+
 ## Quick Start
 
 ### Step 1: Install SQLMap AI
