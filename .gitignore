@@ -8,7 +8,13 @@ sqlmap_adaptive_partial_report_*
 sqlmap.cast
 reports
 .eeg-info
-sqlmap_ai_audit.log
+# Log files
+logs/*.log
+logs/*.txt
+logs/sqlmap_*
+# But keep the logs directory structure
+!logs/
+!logs/.gitkeep
 dist/sqlmap_ai-2.0.0.tar.gz
 dist/sqlmap_ai-2.0.0-py3-none-any.whl
 sqlmap_ai.egg-info/

@@ -77,3 +77,10 @@ ui:
   show_banner: true
   verbose_output: false
 version: 2.0.0
+logging:
+  log_directory: logs
+  audit_log_file: sqlmap_ai_audit.log
+  main_log_file: sqlmap_ai.log
+  enable_file_logging: true
+  max_log_size_mb: 50
+  backup_count: 5

@@ -246,7 +246,20 @@ class InputValidator:
 class AuditLogger:
     """Comprehensive audit logging system"""
     
-    def __init__(self, log_file: str = "sqlmap_ai_audit.log"):
+    def __init__(self, log_file: str = None, config_manager=None):
+        if log_file is None:
+            # Use configuration if available, otherwise default
+            if config_manager and hasattr(config_manager.config, 'logging'):
+                logs_dir = Path.cwd() / config_manager.config.logging.log_directory
+                log_file = logs_dir / config_manager.config.logging.audit_log_file
+            else:
+                # Default fallback
+                logs_dir = Path.cwd() / "logs"
+                log_file = logs_dir / "sqlmap_ai_audit.log"
+            
+            # Ensure logs directory exists
+            logs_dir.mkdir(exist_ok=True)
+        
         self.log_file = Path(log_file)
         self.logger = logging.getLogger("SQLMapAI_Audit")
         self.logger.setLevel(logging.INFO)

@@ -82,6 +82,17 @@ class UIConfig:
 
 
 @dataclass
+class LoggingConfig:
+    """Logging configuration"""
+    log_directory: str = "logs"
+    audit_log_file: str = "sqlmap_ai_audit.log"
+    main_log_file: str = "sqlmap_ai.log"
+    enable_file_logging: bool = True
+    max_log_size_mb: int = 50
+    backup_count: int = 5
+
+
+@dataclass
 class AppConfig:
     """Main application configuration"""
     version: str = "2.0.0"
@@ -95,6 +106,7 @@ class AppConfig:
     sqlmap: SQLMapConfig = field(default_factory=SQLMapConfig)
     reporting: ReportingConfig = field(default_factory=ReportingConfig)
     ui: UIConfig = field(default_factory=UIConfig)
+    logging: LoggingConfig = field(default_factory=LoggingConfig)
     
     # Custom settings
     custom_settings: Dict[str, Any] = field(default_factory=dict)
