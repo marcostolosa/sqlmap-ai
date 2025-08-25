@@ -1,9 +1,16 @@
-GET /product.php?pic=1 HTTP/1.1
+POST /userinfo.php HTTP/1.1
 Host: testphp.vulnweb.com
+Content-Length: 122
+Cache-Control: max-age=0
 Accept-Language: en-US,en;q=0.9
+Origin: http://testphp.vulnweb.com
+Content-Type: application/x-www-form-urlencoded
 Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
-Referer: http://testphp.vulnweb.com/listproducts.php?cat=1
+Referer: http://testphp.vulnweb.com/userinfo.php
 Accept-Encoding: gzip, deflate, br
+Cookie: login=test%2Ftest
 Connection: keep-alive
+
+urname=asasdad&ucc=1234-5678-2300-9000&uemail=email%40email.com&uphone=2323348asd&uaddress=21+streetsdasdasd&update=update
