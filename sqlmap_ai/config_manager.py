@@ -434,3 +434,73 @@ def save_config() -> bool:
 def validate_config() -> List[str]:
     """Validate current configuration"""
     return config_manager.validate_config()
+
+
+def get_timeout_settings():
+    """Get timeout configuration settings"""
+    config = get_config()
+    
+    # Access timeout settings from the config object
+    try:
+        timeout_settings = config.sqlmap.timeout_settings
+        return {
+            'initial_scan': getattr(timeout_settings, 'initial_scan', 120),
+            'follow_up_scan': getattr(timeout_settings, 'follow_up_scan', 300),
+            'data_extraction': getattr(timeout_settings, 'data_extraction', 240),
+            'complex_scan': getattr(timeout_settings, 'complex_scan', 480),
+            'adaptive_multiplier': getattr(timeout_settings, 'adaptive_multiplier', 2.0),
+            'max_adaptive_timeout': getattr(timeout_settings, 'max_adaptive_timeout', 600)
+        }
+    except AttributeError:
+        # Fallback to default values if timeout_settings doesn't exist
+        return {
+            'initial_scan': 120,
+            'follow_up_scan': 300,
+            'data_extraction': 240,
+            'complex_scan': 480,
+            'adaptive_multiplier': 2.0,
+            'max_adaptive_timeout': 600
+        }
+
+def calculate_adaptive_timeout(base_timeout, scan_options, scan_type="follow_up"):
+    """Calculate adaptive timeout based on scan complexity and type"""
+    timeout_settings = get_timeout_settings()
+    
+    # Start with base timeout
+    complexity_multiplier = 1.0
+    
+    # Adjust based on scan type
+    if scan_type == "initial":
+        complexity_multiplier = 1.0
+    elif scan_type == "follow_up":
+        complexity_multiplier = timeout_settings['adaptive_multiplier']
+    elif scan_type == "data_extraction":
+        complexity_multiplier = 0.8  # More conservative for data extraction
+    elif scan_type == "complex":
+        complexity_multiplier = 2.0
+    
+    # Adjust based on scan options
+    if scan_options:
+        options_str = ' '.join(scan_options) if isinstance(scan_options, list) else str(scan_options)
+        
+        # High complexity options
+        if any(high_risk in options_str for high_risk in ['--level=3', '--level=4', '--level=5']):
+            complexity_multiplier += 0.5
+        if any(high_risk in options_str for high_risk in ['--risk=3', '--risk=4', '--risk=5']):
+            complexity_multiplier += 0.3
+        if '--dump' in options_str:
+            complexity_multiplier += 0.4
+        if '--tables' in options_str:
+            complexity_multiplier += 0.2
+        if '--forms' in options_str:
+            complexity_multiplier += 0.3
+        if '--technique=BEUST' in options_str:
+            complexity_multiplier += 0.4
+        if '--dump-all' in options_str:
+            complexity_multiplier += 0.6
+    
+    # Cap the multiplier to prevent excessive timeouts
+    max_multiplier = timeout_settings['max_adaptive_timeout'] / base_timeout
+    complexity_multiplier = min(complexity_multiplier, max_multiplier)
+    
+    return int(base_timeout * complexity_multiplier)

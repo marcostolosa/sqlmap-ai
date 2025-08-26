@@ -14,7 +14,7 @@ from sqlmap_ai.ui import (
     confirm_save_report
 )
 from sqlmap_ai.enhanced_cli import create_cli, handle_cli_commands, EnhancedCLI
-from sqlmap_ai.config_manager import config_manager, get_config
+from sqlmap_ai.config_manager import config_manager, get_config, calculate_adaptive_timeout
 from sqlmap_ai.security_manager import security_manager, SecurityError
 from sqlmap_ai.runner import SQLMapRunner
 from sqlmap_ai.parser import display_report, save_report_to_file, extract_sqlmap_info, create_json_report
@@ -356,11 +356,17 @@ def run_standard_mode(runner, target_url, user_timeout, interactive_mode):
             user_options = get_user_choice(next_options)
             if user_options:
                 print_info("Running follow-up scan...")
-                second_timeout = int(user_timeout * 1.5)
+                
+                # Calculate adaptive timeout based on scan complexity
+                second_timeout = calculate_adaptive_timeout(user_timeout, user_options, "follow_up")
+                
+                print_info(f"Using adaptive timeout: {second_timeout} seconds")
+                
                 result = runner.run_sqlmap(target_url, user_options, timeout=second_timeout, interactive_mode=interactive_mode)
                 if result and "TIMEOUT:" in result:
                     print_warning("Follow-up scan timed out.")
                     print_info("You may still get useful results from the partial scan data.")
+                    print_info("Consider using less aggressive options or increasing timeout for complex scans.")
                 if result:
                     print_success("Test completed successfully!")
                     followup_info = extract_sqlmap_info(result)
@@ -377,10 +383,15 @@ def run_standard_mode(runner, target_url, user_timeout, interactive_mode):
                     ):
                         print_info("Starting data extraction...")
                         extraction_options = f"--dump -T {','.join(followup_info['tables'][:3])}"
+                        
+                        # Use adaptive timeout for data extraction
+                        extraction_timeout = calculate_adaptive_timeout(user_timeout, extraction_options, "data_extraction")
+                        print_info(f"Using extraction timeout: {extraction_timeout} seconds")
+                        
                         extraction_result = runner.run_sqlmap(
                             target_url, 
                             extraction_options, 
-                            timeout=second_timeout,
+                            timeout=extraction_timeout,
                             interactive_mode=interactive_mode
                         )
                         if extraction_result:
@@ -394,6 +405,9 @@ def run_standard_mode(runner, target_url, user_timeout, interactive_mode):
                             if extraction_info.get("extracted"):
                                 extracted_data.update(extraction_info["extracted"])
                             display_report(extraction_result)
+                        elif extraction_result and "TIMEOUT:" in extraction_result:
+                            print_warning("Data extraction timed out.")
+                            print_info("Partial data may be available in the report.")
                     if confirm_save_report():
                         print_info("Creating beautiful HTML report...")
                         try:

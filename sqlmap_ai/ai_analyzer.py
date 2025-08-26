@@ -77,11 +77,36 @@ def ai_suggest_next_steps(report, scan_history=None, extracted_data=None):
     if any(opt.startswith('--data=') for opt in options) and "json" in ' '.join(options).lower() and not any(opt == '--json' for opt in options):
         options.append("--json")
         
-    # Filter out options that might cause issues
+    # Filter out options that might cause issues and optimize for timeout prevention
     valid_options = []
+    has_timeout_risk = False
+    
     for opt in options:
-        if not opt.startswith('-d ') and not opt == '-d' and not opt == '--dump-all':
-            valid_options.append(opt)
+        # Skip potentially problematic options
+        if opt.startswith('-d ') or opt == '-d' or opt == '--dump-all':
+            continue
+            
+        # Check for high-complexity options that might cause timeouts
+        if any(high_risk in opt for high_risk in ['--level=4', '--level=5', '--risk=4', '--risk=5', '--dump-all']):
+            has_timeout_risk = True
+            
+        valid_options.append(opt)
+    
+    # If we have timeout risk, suggest a more conservative approach
+    if has_timeout_risk:
+        print_warning("High-complexity options detected. Consider using more conservative settings to avoid timeouts.")
+        # Replace high-risk options with safer alternatives
+        safer_options = []
+        for opt in valid_options:
+            if opt == '--level=4' or opt == '--level=5':
+                safer_options.append('--level=3')
+            elif opt == '--risk=4' or opt == '--risk=5':
+                safer_options.append('--risk=2')
+            elif opt == '--dump-all':
+                safer_options.append('--tables')  # Start with table enumeration instead
+            else:
+                safer_options.append(opt)
+        valid_options = safer_options
             
     if not valid_options and structured_info.get("dbms", "").lower() == "sqlite":
         print_info("Using SQLite-specific options as fallback")
@@ -109,6 +134,13 @@ def create_advanced_prompt(report, structured_info, scan_history=None, extracted
     Look at the scan report, previous steps, and any data extracted to decide the most effective next steps.
     Analyze what has been discovered so far and what remains to be explored.
 
+    # IMPORTANT: TIMEOUT CONSIDERATIONS
+    - Avoid suggesting overly aggressive options that might cause timeouts
+    - Prefer incremental approaches over comprehensive scans
+    - Start with lower levels (1-2) and risks (1-2) before escalating
+    - Use specific techniques rather than broad enumeration when possible
+    - Consider the target's response time and stability
+
     # SCAN REPORT SUMMARY:
     DBMS: {dbms}
     Vulnerable Parameters: {vulnerable_params}
@@ -132,6 +164,14 @@ def create_advanced_prompt(report, structured_info, scan_history=None, extracted
     3. Dumping interesting tables when appropriate
     4. Using techniques that haven't been tried yet
     5. Avoiding techniques that have failed
+    6. Using conservative settings to prevent timeouts
+
+    # OPTIMIZATION GUIDELINES:
+    - Start with level 1-2 and risk 1-2 for initial scans
+    - Use specific techniques (B, E, U, S, T) rather than all at once
+    - Prefer targeted enumeration over broad scanning
+    - Use --tables before --dump to avoid excessive data extraction
+    - Consider using --threads=3-5 for better performance
 
     # DBMS-SPECIFIC GUIDELINES:
     - For SQLite databases: Use '--tables' instead of '--dbs' as SQLite doesn't support database enumeration. 
@@ -142,7 +182,7 @@ def create_advanced_prompt(report, structured_info, scan_history=None, extracted
     # SQL INJECTION SCENARIOS:
     - Classic GET Parameter: For URLs like 'http://target.com/page.php?id=1', use basic options like '--dbs'
     - URL Path Parameter: For URLs like 'http://target.com/page/1/', use asterisk as injection marker (e.g., 'page/1*') and '--dbs'
-    - Multiple Parameters: For URLs with multiple parameters, specify which to test with '-p' or use '--level=3' to test all
+    - Multiple Parameters: For URLs with multiple parameters, specify which to test with '-p' or use '--level=2' to test all
     - POST Parameter: Use '--data' or '--forms' to test POST parameters
     - Cookie-Based: Use '--cookie' to specify cookie values to test
     - Header-Based: Use '--headers' to test HTTP headers for injection
@@ -155,8 +195,9 @@ def create_advanced_prompt(report, structured_info, scan_history=None, extracted
     }}
     ```
 
-    Each option should be a separate string in the array (e.g., "--level=3", "--risk=2").
+    Each option should be a separate string in the array (e.g., "--level=2", "--risk=1").
     Be specific and concise. Don't include basic options like -u (URL) as these will be added automatically.
+    Prefer conservative settings to avoid timeouts.
     """
     report_lines = report.split('\n')
     report_excerpt = '\n'.join(report_lines[-30:]) if len(report_lines) > 30 else report

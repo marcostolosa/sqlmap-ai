@@ -69,6 +69,13 @@ sqlmap:
   max_risk: 2
   max_threads: 20
   max_timeout: 600
+  timeout_settings:
+    initial_scan: 120
+    follow_up_scan: 300
+    data_extraction: 240
+    complex_scan: 480
+    adaptive_multiplier: 2.0
+    max_adaptive_timeout: 600
 ui:
   confirm_dangerous_operations: true
   enable_colors: true
