@@ -23,7 +23,7 @@ from sqlmap_ai.timeout_handler import handle_timeout_response
 from sqlmap_ai.adaptive_testing import run_adaptive_test_sequence
 from sqlmap_ai.advanced_reporting import report_generator
 from sqlmap_ai.evasion_engine import evasion_engine
-from utils.ai_providers import ai_manager, get_available_ai_providers
+from utils.ai_providers import ai_manager, get_available_ai_providers, AIProvider
 from typing import Optional
 def main():
     """Enhanced main function with improved CLI and security"""
@@ -160,7 +160,7 @@ def run_enhanced_adaptive_mode(runner, target_url, user_timeout, interactive_mod
     # Enhance with AI analysis if available
     if result and not args.disable_ai:
         try:
-            asyncio.run(enhance_with_ai_analysis(result, target_url))
+            asyncio.run(enhance_with_ai_analysis(result, target_url, args))
         except Exception as e:
             print_warning(f"AI analysis failed: {e}")
     
@@ -171,16 +171,61 @@ def run_enhanced_standard_mode(runner, target_url, user_timeout, interactive_mod
     """Run enhanced standard mode"""
     print_info("Starting enhanced standard testing...")
     
+    # Determine AI provider from arguments
+    ai_provider = None
+    if hasattr(args, 'ai_provider') and args.ai_provider and args.ai_provider != 'auto':
+        ai_provider = args.ai_provider
+        
+        # Enable Ollama if selected
+        if ai_provider == 'ollama':
+            import os
+            os.environ['ENABLE_OLLAMA'] = 'true'
+            # Reinitialize AI manager to include Ollama provider
+            ai_manager.reinitialize_providers()
+    
+    # Set Ollama model if specified
+    if hasattr(args, 'ollama_model') and args.ollama_model:
+        import os
+        os.environ['OLLAMA_MODEL'] = args.ollama_model
+    
+    # Set Ollama model if specified
+    if hasattr(args, 'ollama_model') and args.ollama_model:
+        import os
+        os.environ['OLLAMA_MODEL'] = args.ollama_model
+        # Update the Ollama provider's model if it exists
+        if AIProvider.OLLAMA in ai_manager.providers:
+            ai_manager.providers[AIProvider.OLLAMA].update_model(args.ollama_model)
+    
     # Use the existing standard mode but with enhancements
-    return run_standard_mode(runner, target_url, user_timeout, interactive_mode)
+    return run_standard_mode(runner, target_url, user_timeout, interactive_mode, ai_provider, args)
 
 
-async def enhance_with_ai_analysis(result, target_url):
+async def enhance_with_ai_analysis(result, target_url, args):
     """Enhance scan results with AI analysis"""
     if not result:
         return
     
     print_info("Enhancing results with AI analysis...")
+    
+    # Determine AI provider from arguments
+    ai_provider = None
+    if hasattr(args, 'ai_provider') and args.ai_provider and args.ai_provider != 'auto':
+        ai_provider = args.ai_provider
+        
+        # Enable Ollama if selected
+        if ai_provider == 'ollama':
+            import os
+            os.environ['ENABLE_OLLAMA'] = 'true'
+            # Reinitialize AI manager to include Ollama provider
+            ai_manager.reinitialize_providers()
+    
+    # Set Ollama model if specified
+    if hasattr(args, 'ollama_model') and args.ollama_model:
+        import os
+        os.environ['OLLAMA_MODEL'] = args.ollama_model
+        # Update the Ollama provider's model if it exists
+        if AIProvider.OLLAMA in ai_manager.providers:
+            ai_manager.providers[AIProvider.OLLAMA].update_model(args.ollama_model)
     
     # Get AI response for advanced analysis
     scan_data = result.get('scan_history', [])
@@ -197,7 +242,17 @@ async def enhance_with_ai_analysis(result, target_url):
         """
         
         try:
-            ai_response = await ai_manager.get_response(prompt)
+            # Convert string provider to AIProvider enum if needed
+            provider_enum = None
+            if ai_provider:
+                try:
+                    from utils.ai_providers import AIProvider
+                    provider_enum = AIProvider(ai_provider)
+                except ValueError:
+                    print_warning(f"Invalid AI provider: {ai_provider}")
+                    return
+            
+            ai_response = await ai_manager.get_response(prompt, provider=provider_enum)
             if ai_response.success:
                 result['ai_analysis'] = ai_response.content
                 print_success("AI analysis completed")
@@ -317,7 +372,7 @@ def run_adaptive_mode(runner, target_url, user_timeout, interactive_mode):
         print_error("Adaptive testing failed. Check target URL and try again.")
         if result and "message" in result:
             print_info(f"Error: {result['message']}")
-def run_standard_mode(runner, target_url, user_timeout, interactive_mode):
+def run_standard_mode(runner, target_url, user_timeout, interactive_mode, ai_provider=None, args=None):
     print_info("Starting initial reconnaissance...")
     scan_history = []
     extracted_data = {}
@@ -346,11 +401,24 @@ def run_standard_mode(runner, target_url, user_timeout, interactive_mode):
             print_warning("Scan was interrupted by user. Stopping here.")
             return
         display_report(report)
-        print_info("Analyzing results with Groq AI and determining next steps...")
+        # Determine AI provider name for display
+        provider_name = "AI"
+        if ai_provider:
+            provider_name = ai_provider.upper()
+        print_info(f"Analyzing results with {provider_name} and determining next steps...")
+        # Determine if user wants advanced prompts
+        use_advanced = None
+        if hasattr(args, 'advanced') and args.advanced:
+            use_advanced = True
+        elif hasattr(args, 'simple') and args.simple:
+            use_advanced = False
+        
         next_options = ai_suggest_next_steps(
             report=report, 
             scan_history=scan_history,
-            extracted_data=extracted_data
+            extracted_data=extracted_data,
+            ai_provider=ai_provider,
+            use_advanced=use_advanced
         )
         if next_options:
             user_options = get_user_choice(next_options)

@@ -123,7 +123,6 @@ class AIProviderManager:
         """Get response from AI provider with fallback"""
         
         providers_to_try = [provider] if provider else self.active_providers
-        
         for attempt_provider in providers_to_try:
             if attempt_provider not in self.providers:
                 continue
@@ -149,6 +148,12 @@ class AIProviderManager:
     def get_available_providers(self) -> List[AIProvider]:
         """Get list of available providers"""
         return self.active_providers.copy()
+    
+    def reinitialize_providers(self):
+        """Reinitialize providers (useful when environment variables change)"""
+        self.providers = {}
+        self.active_providers = []
+        self._setup_providers()
 
 
 class BaseAIProvider:
@@ -351,6 +356,10 @@ class OllamaProvider(BaseAIProvider):
         self.default_model = os.getenv("OLLAMA_MODEL", "llama3.2")
         self.rate_limit_delay = 0.5
     
+    def update_model(self, model_name: str):
+        """Update the default model name"""
+        self.default_model = model_name
+    
     async def get_response(
         self, 
         prompt: str, 
@@ -362,6 +371,9 @@ class OllamaProvider(BaseAIProvider):
         
         model = model or self.default_model
         start_time = time.time()
+        
+        logger.info(f"Ollama provider: Using model {model}")
+        logger.info(f"Ollama provider: Base URL {self.base_url}")
         
         for attempt in range(max_retries):
             try:
@@ -388,7 +400,7 @@ class OllamaProvider(BaseAIProvider):
                             "num_predict": kwargs.get('max_tokens', 512)
                         }
                     },
-                    timeout=kwargs.get('timeout', 60)
+                    timeout=kwargs.get('timeout', 120)  # Increased timeout for complex prompts
                 )
                 
                 if response.status_code != 200:
@@ -407,6 +419,7 @@ class OllamaProvider(BaseAIProvider):
                 )
                 
             except Exception as e:
+                logger.warning(f"Ollama provider attempt {attempt + 1} failed: {e}")
                 if attempt == max_retries - 1:
                     return AIResponse(
                         content="",

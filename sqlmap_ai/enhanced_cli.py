@@ -95,13 +95,27 @@ For more information, visit: https://github.com/atiilla/sqlmap-ai
         ai_group = parser.add_argument_group('AI Configuration')
         ai_group.add_argument(
             '--ai-provider',
-            choices=['groq', 'openai', 'anthropic', 'local', 'auto'],
+            choices=['groq', 'openai', 'anthropic', 'local', 'ollama', 'auto'],
             default='auto',
             help='AI provider to use (default: auto)'
         )
         ai_group.add_argument(
             '--ai-model',
             help='Specific AI model to use'
+        )
+        ai_group.add_argument(
+            '--ollama-model',
+            help='Specific Ollama model to use (overrides OLLAMA_MODEL env var)'
+        )
+        ai_group.add_argument(
+            '--advanced',
+            action='store_true',
+            help='Use advanced AI prompts (default: simple for Ollama, advanced for other providers)'
+        )
+        ai_group.add_argument(
+            '--simple',
+            action='store_true',
+            help='Use simple AI prompts (default: simple for Ollama, advanced for other providers)'
         )
         ai_group.add_argument(
             '--disable-ai',

@@ -21,7 +21,7 @@ ai_providers:
     api_key_env: ''
     enabled: false
     max_tokens: 512
-    model: microsoft/DialoGPT-medium
+    model: deepseek-r1:1.5b
     name: local
     priority: 4
     rate_limit: 0.1

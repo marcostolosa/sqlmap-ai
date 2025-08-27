@@ -1,37 +1,81 @@
-from utils.groq_utils import get_groq_response
+from utils.ai_providers import ai_manager, AIProvider
 from sqlmap_ai.ui import print_info, print_warning, print_success
 from sqlmap_ai.parser import extract_sqlmap_info
 import json
-def ai_suggest_next_steps(report, scan_history=None, extracted_data=None):
+import asyncio
+def ai_suggest_next_steps(report, scan_history=None, extracted_data=None, ai_provider=None, use_advanced=None):
     print_info("Analyzing SQLMap results with AI...")
     if not report:
         return ["--technique=BT", "--level=2", "--risk=1"]
     if report.startswith("TIMEOUT_WITH_PARTIAL_DATA:"):
         report = report[len("TIMEOUT_WITH_PARTIAL_DATA:"):]
     structured_info = extract_sqlmap_info(report)
-    prompt = create_advanced_prompt(report, structured_info, scan_history, extracted_data)
-    print_info("Sending detailed analysis request to Groq AI...")
-    response = get_groq_response(prompt=prompt)
-    if not response:
+    
+    # Determine which prompt to use based on provider and user preference
+    use_simple = False
+    
+    # Default behavior: simple for Ollama, advanced for others
+    if ai_provider == AIProvider.OLLAMA or ai_provider == "ollama":
+        use_simple = True
+    
+    # Override based on user preference
+    if use_advanced is not None:
+        use_simple = not use_advanced
+    
+    if use_simple:
+        prompt = create_simple_prompt(report, structured_info, scan_history, extracted_data)
+        print_info("Using simple prompt for AI analysis")
+    else:
+        prompt = create_advanced_prompt(report, structured_info, scan_history, extracted_data)
+        print_info("Using advanced prompt for AI analysis")
+    
+    # Determine which AI provider to use
+    provider_name = "AI"
+    if ai_provider:
+        provider_name = ai_provider.upper()
+    print_info(f"Sending detailed analysis request to {provider_name}...")
+    
+    # Use the AI provider system
+    try:
+        # Convert string provider to AIProvider enum if needed
+        provider_enum = None
+        if ai_provider:
+            try:
+                provider_enum = AIProvider(ai_provider)
+                print_info(f"Using AI provider: {provider_enum}")
+            except ValueError:
+                print_warning(f"Invalid AI provider: {ai_provider}")
+                return ["--technique=BEU", "--level=3"]
+        
+        response = asyncio.run(ai_manager.get_response(prompt, provider=provider_enum))
+        if response and response.success:
+            response_text = response.content
+        else:
+            print_warning(f"AI provider {ai_provider} failed: {response.error if response else 'Unknown error'}")
+            return ["--technique=BEU", "--level=3"]
+    except Exception as e:
+        print_warning(f"AI analysis failed: {e}")
+        return ["--technique=BEU", "--level=3"]
+    if not response_text:
         print_warning("AI couldn't suggest options, using fallback options")
         return ["--technique=BEU", "--level=3"]
     print_success("Received AI recommendations!")
     try:
         # Try parsing JSON responses
-        if "```json" in response:
-            json_start = response.find("```json") + 7
-            json_end = response.find("```", json_start)
-            json_str = response[json_start:json_end].strip()
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            json_str = response_text[json_start:json_end].strip()
             recommendation = json.loads(json_str)
             if "sqlmap_options" in recommendation:
                 return recommendation["sqlmap_options"]
             elif "options" in recommendation:
                 return recommendation["options"]
         # Look for code blocks without json tag
-        elif "```" in response:
-            code_start = response.find("```") + 3
-            code_end = response.find("```", code_start)
-            code_block = response[code_start:code_end].strip()
+        elif "```" in response_text:
+            code_start = response_text.find("```") + 3
+            code_end = response_text.find("```", code_start)
+            code_block = response_text[code_start:code_end].strip()
             # Check if content is JSON
             try:
                 recommendation = json.loads(code_block)
@@ -44,7 +88,7 @@ def ai_suggest_next_steps(report, scan_history=None, extracted_data=None):
                 
         # Extract options from the response text
         options = []
-        for line in response.split('\n'):
+        for line in response_text.split('\n'):
             line = line.strip()
             if line.startswith('--') or line.startswith('-p ') or line.startswith('-D ') or line.startswith('-T ') or \
                line.startswith('--data=') or line.startswith('--cookie=') or line.startswith('--headers=') or \
@@ -58,7 +102,7 @@ def ai_suggest_next_steps(report, scan_history=None, extracted_data=None):
         print_warning(f"Error parsing AI response: {str(e)}")
         # Fallback to simple extraction
         options = []
-        for line in response.strip().split('\n'):
+        for line in response_text.strip().split('\n'):
             for part in line.split():
                 if part.startswith('--') or part.startswith('-p ') or part.startswith('-D ') or part.startswith('-T ') or \
                    part.startswith('--data=') or part.startswith('--cookie=') or part.startswith('--headers=') or \
@@ -126,6 +170,35 @@ def ai_suggest_next_steps(report, scan_history=None, extracted_data=None):
             return ["--technique=BEU", "--level=3"]
         
     return valid_options
+
+def create_simple_prompt(report, structured_info, scan_history=None, extracted_data=None):
+    """Create a simpler prompt for Ollama to avoid timeouts"""
+    prompt = """
+    You are a SQLMap expert. Analyze this SQL injection scan result and suggest the next steps.
+
+    DBMS: {dbms}
+    Vulnerable Parameters: {vulnerable_params}
+    Databases Found: {databases}
+
+    Based on this information, suggest the next SQLMap options to use. Focus on:
+    1. Extracting more database information
+    2. Using conservative settings to prevent timeouts
+    3. Using specific techniques rather than broad scanning
+
+    Return your recommendation as a simple list of options, one per line:
+    --level=2
+    --risk=1
+    --dbs
+    """
+    
+    formatted_prompt = prompt.format(
+        dbms=structured_info.get("dbms", "Unknown"),
+        vulnerable_params=', '.join(structured_info.get("vulnerable_parameters", [])) or "None",
+        databases=', '.join(structured_info.get("databases", [])) or "None"
+    )
+    
+    return formatted_prompt
+
 def create_advanced_prompt(report, structured_info, scan_history=None, extracted_data=None):
     prompt = """
     You are a SQLMap expert. You are given a SQLMap scan report and a list of previous scan steps.
