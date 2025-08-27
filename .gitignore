@@ -21,3 +21,4 @@ sqlmap_ai.egg-info/
 .sqlmap_ai_key
 dist/
 documentation/
+pypi-upload.sh
