@@ -103,7 +103,7 @@ class InputValidator:
     
     def __init__(self):
         self.dangerous_patterns = [
-            r'[;&|`]',  # Command injection
+            r'[;|`]',   # Command injection (removed & as it's normal in URLs)
             r'\.\./',   # Path traversal
             r'<script', # XSS
             r'javascript:', # JavaScript protocol
@@ -124,12 +124,26 @@ class InputValidator:
         if len(url) > self.max_url_length:
             return False, f"URL too long (max {self.max_url_length} characters)"
         
-        # Check for dangerous patterns
-        for pattern in self.dangerous_patterns:
+        # Check for dangerous patterns in the original URL first (before parsing)
+        # This catches patterns that might be removed by URL parsing
+        dangerous_patterns_original = [
+            r'[;|`]',   # Command injection (excluding & which is normal in URLs)
+            r'%3B',     # URL-encoded semicolon
+            r'%7C',     # URL-encoded pipe
+            r'%60',     # URL-encoded backtick
+            r'\.\./',   # Path traversal
+            r'<script', # XSS
+            r'javascript:', # JavaScript protocol
+            r'data:',   # Data URLs
+            r'file:',   # File protocol
+            r'ftp:',    # FTP protocol
+        ]
+        
+        for pattern in dangerous_patterns_original:
             if re.search(pattern, url, re.IGNORECASE):
                 return False, f"URL contains potentially dangerous pattern: {pattern}"
         
-        # Parse URL
+        # Parse URL to validate structure
         try:
             parsed = urllib.parse.urlparse(url)
         except Exception as e:

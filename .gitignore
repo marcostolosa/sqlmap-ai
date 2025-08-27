@@ -3,6 +3,7 @@ sqlmap
 .venv
 __pycache__
 requirements.txt
+venv
 test.py
 sqlmap_adaptive_partial_report_*
 sqlmap.cast
